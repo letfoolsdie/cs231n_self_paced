@@ -269,6 +269,9 @@ class FullyConnectedNet(object):
                 cache_dict['batchnorm_'+str(layer_n)+'_cache'] = cache
             out, cache = relu_forward(out)
             cache_dict['relu_'+str(layer_n)+'_cache'] = cache
+            if self.use_dropout:
+                out, cache = dropout_forward(out, self.dropout_param)
+                cache_dict['dropout_'+str(layer_n)+'_cache'] = cache
             return out, cache_dict
 
 
@@ -313,6 +316,8 @@ class FullyConnectedNet(object):
         
         ## Compute layer backward (I'm to lazy to make it separate function :\)
         for i in range(len(self.hidden_dims), 0, -1):
+            if self.use_dropout:
+                dx = dropout_backward(dx, cache_dict['dropout_'+str(i)+'_cache'])
             dx = relu_backward(dx, cache_dict['relu_'+str(i)+'_cache'])
             if self.use_batchnorm:
                 dx, dgamma, dbeta = batchnorm_backward(dx, cache_dict['batchnorm_'+str(i)+'_cache'])
