@@ -406,7 +406,49 @@ def conv_forward_naive(x, w, b, conv_param):
     # TODO: Implement the convolutional forward pass.                         #
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
-    pass
+    # pass
+    def process_single_image(im, w, b, conv_param):
+        result = list() ## store the result of each filter
+        # print(im.shape)
+        for filt, b_small in zip(w, b):
+            # print('here')
+            hei_result = list()
+            for hei in range(0, im.shape[1] - w.shape[2] + 1, conv_param['stride']):
+                # print('there')
+                wei_result = list()
+                for wei in range(0,im.shape[2] - w.shape[3] + 1, conv_param['stride']):
+                    im_part = im[:, hei:(hei+filt.shape[1]), wei:(wei+filt.shape[2])]
+                    temp = np.sum(im_part * filt) + b_small
+                    wei_result.append(temp)
+                hei_result.append(wei_result)
+            result.append(hei_result)
+        result = np.array(result)
+        # print('Result shape ', result.shape)
+        h_check = 1 + (im.shape[1] - w.shape[2]) / conv_param['stride']
+        w_check = 1 + (im.shape[2] - w.shape[3]) / conv_param['stride']
+        # result += b
+        # try:
+        assert result.shape == (w.shape[0], h_check, w_check), result.shape
+        # except:
+        #     print('FAILED ', result.shape)
+        #     print(' Expected shape ', (w.shape[0], h_check, w_check))
+        #     return result
+        return result
+
+
+
+
+    ## Zero-pad the input:
+    out = list()
+    pad = conv_param['pad']
+    x = np.pad(x, pad_width=[(0,0), (0,0), (pad,pad), (pad,pad)], mode='constant')
+    for im in x:
+        temp = process_single_image(im, w, b, conv_param)
+        # return temp # DEBUG
+        out.append(temp)
+
+    out = np.array(out)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -431,7 +473,11 @@ def conv_backward_naive(dout, cache):
     ###########################################################################
     # TODO: Implement the convolutional backward pass.                        #
     ###########################################################################
-    pass
+    # pass
+    x, w, b, conv_param = cache
+    db = dout.sum(axis=0).sum(axis=1).sum(axis=1) ## not sure if this will work in general :/
+    dw = x # wrong
+    dx = w # wrong 
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -457,7 +503,29 @@ def max_pool_forward_naive(x, pool_param):
     ###########################################################################
     # TODO: Implement the max pooling forward pass                            #
     ###########################################################################
-    pass
+    # pass
+    def process_single_image(im, pool_param):
+        p_hei, p_wei, p_stride = pool_param['pool_height'], pool_param['pool_width'], pool_param['stride']
+        result = np.zeros((im.shape[0], int(1 + (im.shape[1]-p_hei)/p_stride), int(1 + (im.shape[2]-p_wei)/p_stride)))
+        # print('res shape ', result.shape)
+
+        for result_h, hei in enumerate(range(0, im.shape[1] - p_hei + 1, p_stride)):
+            for result_w, wei in enumerate(range(0, im.shape[2] - p_wei + 1, p_stride)):
+                im_part = im[:, hei:(hei+p_hei), wei:(wei+p_wei)]
+                # print(im_part.shape)
+                assert im_part.shape[0] == im.shape[0], im_part.shape
+                temp = np.max(np.max(im_part, axis=2), axis=1)
+                # print(temp)
+                result[:, result_h, result_w] = temp
+
+        return result
+    out = list()
+    for image in x:
+        temp = process_single_image(image, pool_param)
+        out.append(temp)
+    out = np.array(out)
+
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
